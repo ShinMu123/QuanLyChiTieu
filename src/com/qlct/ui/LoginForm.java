@@ -196,10 +196,7 @@ public class LoginForm extends JFrame {
         registerButton.setIconTextGap(10);
         registerButton.setAlignmentX(Component.LEFT_ALIGNMENT);
         registerButton.setForeground(UITheme.TEXT_SECONDARY);
-        registerButton.addActionListener(e -> JOptionPane.showMessageDialog(this,
-                "Liên hệ quản trị hệ thống để được cấp quyền sử dụng.",
-                "Thông tin",
-                JOptionPane.INFORMATION_MESSAGE));
+        registerButton.addActionListener(e -> new RegisterForm().setVisible(true));
         formPanel.add(registerButton);
 
         formPanel.add(Box.createVerticalStrut(24));

@@ -1,5 +1,6 @@
 package com.qlct.service;
 
+import com.qlct.dao.UserDAO;
 import com.qlct.model.User;
 import java.awt.Graphics2D;
 import java.awt.RenderingHints;
@@ -18,9 +19,11 @@ import javax.imageio.ImageIO;
  */
 public final class ProfileUpdateService {
     private static final int AVATAR_SIZE = 128;
+    private final UserDAO userDAO;
     private final Path avatarDirectory;
 
-    public ProfileUpdateService(Path avatarDirectory) {
+    public ProfileUpdateService(UserDAO userDAO, Path avatarDirectory) {
+        this.userDAO = Objects.requireNonNull(userDAO, "userDAO");
         this.avatarDirectory = Objects.requireNonNull(avatarDirectory, "avatarDirectory");
     }
 
@@ -37,7 +40,8 @@ public final class ProfileUpdateService {
         String fileName = buildAvatarFileName(user);
         Path target = baseDir.resolve(fileName).normalize();
         ImageIO.write(resized, "png", target.toFile());
-        return new AvatarData(target.toString(), resized);
+        String storedPath = baseDir.relativize(target).toString();
+        return new AvatarData(storedPath, resized);
     }
 
     public BufferedImage loadAvatar(String storedPath) throws IOException {
@@ -57,12 +61,11 @@ public final class ProfileUpdateService {
     public void applyChanges(User user, String newFullName, String avatarPath) {
         Objects.requireNonNull(user, "user");
         String safeName = newFullName == null ? "" : newFullName.trim();
-        if (!safeName.isEmpty()) {
-            user.setFullName(safeName);
-        }
-        if (avatarPath != null && !avatarPath.isBlank()) {
-            user.setAvatar(avatarPath);
-        }
+        String nameToPersist = safeName.isEmpty() ? user.getFullName() : safeName;
+        String avatarToPersist = avatarPath != null && !avatarPath.isBlank() ? avatarPath : user.getAvatar();
+        userDAO.updateProfile(user.getUserId(), nameToPersist, avatarToPersist);
+        user.setFullName(nameToPersist);
+        user.setAvatar(avatarToPersist);
     }
 
     private static BufferedImage resizeToAvatar(BufferedImage original) {

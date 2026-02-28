@@ -40,7 +40,7 @@ public final class ProfileDialog extends JDialog {
         this.profileService = profileService;
         this.currentAvatarPath = user.getAvatar();
         fullNameField.setText(user.getFullName());
-        avatarPathField.setText(user.getAvatar());
+        avatarPathField.setText(user.getAvatar() == null ? "" : user.getAvatar());
         avatarPathField.setEditable(false);
         avatarPathField.setToolTipText("Đường dẫn ảnh đang dùng");
         UITheme.styleInput(fullNameField);
@@ -161,9 +161,16 @@ public final class ProfileDialog extends JDialog {
                     JOptionPane.WARNING_MESSAGE);
             return;
         }
-        profileService.applyChanges(user, name, currentAvatarPath);
-        updated = true;
-        dispose();
+        try {
+            profileService.applyChanges(user, name, currentAvatarPath);
+            updated = true;
+            dispose();
+        } catch (RuntimeException ex) {
+            JOptionPane.showMessageDialog(this,
+                    "Không thể lưu hồ sơ: " + ex.getMessage(),
+                    "Lỗi",
+                    JOptionPane.ERROR_MESSAGE);
+        }
     }
 
     private void loadInitialAvatar() {

@@ -2,6 +2,7 @@ package com.qlct.ui;
 
 import com.qlct.dao.CategoryDAO;
 import com.qlct.dao.TransactionDAO;
+import com.qlct.dao.UserDAO;
 import com.qlct.model.Category;
 import com.qlct.model.Summary;
 import com.qlct.model.Transaction;
@@ -18,6 +19,7 @@ import java.awt.Image;
 import java.awt.RenderingHints;
 import java.awt.image.BufferedImage;
 import java.io.File;
+import java.io.IOException;
 import java.nio.file.Path;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -40,7 +42,8 @@ public class MainForm extends JFrame {
     private final User user;
     private final TransactionDAO transactionDAO = new TransactionDAO();
     private final CategoryDAO categoryDAO = new CategoryDAO();
-    private final ProfileUpdateService profileService = new ProfileUpdateService(Path.of("assets", "avatars"));
+    private final UserDAO userDAO = new UserDAO();
+    private final ProfileUpdateService profileService = new ProfileUpdateService(userDAO, Path.of("assets", "avatars"));
 
     private final SidebarPanel sidebarPanel = new SidebarPanel();
     private final SummaryPanel summaryPanel = new SummaryPanel();
@@ -319,11 +322,22 @@ public class MainForm extends JFrame {
 
     private ImageIcon resolveAvatarIcon(String avatarPath, String fullName) {
         if (avatarPath != null && !avatarPath.isBlank()) {
-            File file = new File(avatarPath);
-            if (file.exists()) {
-                ImageIcon icon = new ImageIcon(file.getAbsolutePath());
-                Image scaled = icon.getImage().getScaledInstance(72, 72, Image.SCALE_SMOOTH);
-                return new ImageIcon(scaled);
+            try {
+                BufferedImage buffered = profileService.loadAvatar(avatarPath);
+                if (buffered != null) {
+                    Image scaled = buffered.getScaledInstance(72, 72, Image.SCALE_SMOOTH);
+                    return new ImageIcon(scaled);
+                }
+            } catch (IOException ignored) {
+                File file = new File(avatarPath);
+                if (!file.isAbsolute()) {
+                    file = Path.of("assets", "avatars").resolve(avatarPath).toFile();
+                }
+                if (file.exists()) {
+                    ImageIcon icon = new ImageIcon(file.getAbsolutePath());
+                    Image scaled = icon.getImage().getScaledInstance(72, 72, Image.SCALE_SMOOTH);
+                    return new ImageIcon(scaled);
+                }
             }
         }
         return createDefaultAvatar(fullName);
